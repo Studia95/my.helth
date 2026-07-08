@@ -87,7 +87,7 @@ export default function App() {
     if (action === "taken" && intakeId) {
       updateDailyIntakeStatus(intakeId, "taken").then(() => {
         getDailyIntakesByDate(today).then(setIntakes);
-        window.history.replaceState({}, "", "/");
+        window.history.replaceState({}, "", import.meta.env.BASE_URL);
       });
     }
   }, []);

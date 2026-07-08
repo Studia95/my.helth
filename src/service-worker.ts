@@ -8,10 +8,13 @@ declare const self: ServiceWorkerGlobalScope & {
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
+const appBaseUrl = new URL("./", self.location.href);
+const notificationIconUrl = new URL("icons/icon-192.png", appBaseUrl).toString();
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data || {};
-  const url = new URL("/", self.location.origin);
+  const url = new URL("./", appBaseUrl);
 
   if (event.action === "taken") {
     url.searchParams.set("action", "taken");
@@ -26,8 +29,8 @@ self.addEventListener("notificationclick", (event) => {
       }).then(() =>
         self.registration.showNotification(event.notification.title, {
           body: event.notification.body,
-          icon: "/icons/icon-192.png",
-          badge: "/icons/icon-192.png",
+          icon: notificationIconUrl,
+          badge: notificationIconUrl,
           tag: `${data.intakeId}-later-${Date.now()}`,
           data,
           actions: [

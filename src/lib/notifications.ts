@@ -3,6 +3,7 @@ import type { UserSettings } from "../types/settings";
 import { parseISODate } from "./dates";
 
 let timers: number[] = [];
+const notificationIconUrl = `${import.meta.env.BASE_URL}icons/icon-192.png`;
 
 type NotificationActionLike = { action: string; title: string };
 type ExtendedNotificationOptions = NotificationOptions & {
@@ -63,8 +64,8 @@ export const showIntakeNotification = async (
   const options: ExtendedNotificationOptions = {
     body: medication.dosage,
     tag: intake.id,
-    badge: "/icons/icon-192.png",
-    icon: "/icons/icon-192.png",
+    badge: notificationIconUrl,
+    icon: notificationIconUrl,
     data: {
       intakeId: intake.id,
       repeatReminderMinutes: settings.repeatReminderMinutes

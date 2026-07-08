@@ -17,11 +17,9 @@ npm run build
 
 ## GitHub Pages
 
-```bash
-npm run build
-```
+Публикация настроена через GitHub Actions. После push в `main` workflow собирает приложение в `dist` и публикует готовую сборку на GitHub Pages.
 
-Затем можно залить папку `dist` в GitHub Pages или настроить GitHub Actions для публикации собранного приложения.
+В настройках репозитория GitHub Pages должен быть выбран источник `GitHub Actions`.
 
 ## Возможности
 
