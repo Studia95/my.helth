@@ -192,8 +192,11 @@ export const advanceDailyIntakeWorkflow = async (intakeId: string, medication: M
       const minutes = workflow.afterMealTimer || 0;
       next = {
         ...next,
-        workflowStep: minutes > 0 ? "wait_after_food" : "take_after_food",
+        status: minutes > 0 ? "pending" : "taken",
+        takenAt: minutes > 0 ? undefined : nowIso,
+        workflowStep: minutes > 0 ? "wait_after_food" : "finish",
         workflowStepEndsAt: minutes > 0 ? addMinutes(now, minutes).toISOString() : undefined,
+        workflowFinishedAt: minutes > 0 ? undefined : nowIso,
         timerNotifiedAt: undefined
       };
     }

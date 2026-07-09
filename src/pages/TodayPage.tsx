@@ -30,7 +30,7 @@ export default function TodayPage({
 }: TodayPageProps) {
   const medicationMap = new Map(medications.map((medication) => [medication.id, medication]));
   const taken = intakes.filter((intake) => intake.status === "taken").length;
-  const activeIntake = intakes.find((intake) => intake.status !== "missed" && intake.workflowStep !== "finish");
+  const activeIntake = intakes.find((intake) => intake.workflowStep !== "finish");
 
   return (
     <>

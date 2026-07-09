@@ -44,6 +44,7 @@ function InteractiveIntakeCard({
   const isOverdue = remainingMs !== undefined && remainingMs < -60 * 60 * 1000;
   const isAlmostDue = remainingMs !== undefined && remainingMs > 0 && remainingMs <= 60 * 1000;
   const canAct = isActive || isFinished;
+  const showWorkflowPanel = isActive && !isFinished && (isMissed || !isTaken || step !== "take");
   const workflow = getMedicationWorkflow(medication);
   const totalMs = timerEndsAt && timerStartedAt ? Math.max(timerEndsAt - timerStartedAt, 1) : 1;
   const progress = timerEndsAt ? Math.min(100, Math.max(0, ((totalMs - Math.max(remainingMs || 0, 0)) / totalMs) * 100)) : 0;
@@ -94,7 +95,7 @@ function InteractiveIntakeCard({
         </button>
       </div>
 
-      {isActive && !isFinished ? (
+      {showWorkflowPanel ? (
         <div className={`mt-4 rounded-2xl border p-3 ${isOverdue ? "border-red-200 bg-white/70 dark:border-red-300/20 dark:bg-white/5" : "border-emerald-100 bg-white/70 dark:border-emerald-300/20 dark:bg-white/5"}`}>
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
@@ -165,6 +166,7 @@ function getWorkflowUi({
   const step = intake.workflowStep || "take";
   const expired = remainingMs !== undefined && remainingMs <= 0;
   const overdue = remainingMs !== undefined && remainingMs < -60 * 60 * 1000;
+  const isMissed = intake.status === "missed";
 
   if (overdue) {
     return {
@@ -208,7 +210,7 @@ function getWorkflowUi({
 
   if (step === "wait_after_food") {
     return {
-      title: "Ждём окончания еды",
+      title: isMissed ? "Пропущено, начните с еды" : "Ждём окончания еды",
       timerText: "еда",
       subtitle: "После еды запустим таймер до препарата",
       actionLabel: "Я закончил есть",
@@ -227,10 +229,10 @@ function getWorkflowUi({
   }
 
   return {
-    title: isActive ? "Активный приём" : "Ожидает очереди",
+    title: isMissed ? "Пропущено, можно выполнить сейчас" : isActive ? "Активный приём" : "Ожидает очереди",
     timerText: formatClock(new Date(now).toISOString()),
     subtitle: getMealTimingLabel(medication),
-    actionLabel: "✓ Принял",
+    actionLabel: isMissed ? "Принять сейчас" : "✓ Принял",
     waiting: false
   };
 }
