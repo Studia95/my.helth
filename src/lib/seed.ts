@@ -63,10 +63,11 @@ const seedItems: SeedItem[] = [
   },
   {
     name: "Маалокс",
-    dosage: "1 стик",
-    form: "stick",
+    dosage: "1 ст/л",
+    form: "syrup",
     times: ["09:30", "14:30", "21:30"],
     mealTiming: "after_food_1_5_hour",
+    unit: "столовая ложка",
     days: 7
   },
   {

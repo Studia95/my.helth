@@ -11,6 +11,7 @@ interface TodayPageProps {
   medications: Medication[];
   notificationsEnabled: boolean;
   onToggle: (intake: DailyIntake) => void;
+  onTimerElapsed: (intake: DailyIntake) => void;
   onOpenMedication: (id: string) => void;
   onOpenSettings: () => void;
   onBellClick: () => void;
@@ -22,12 +23,14 @@ export default function TodayPage({
   medications,
   notificationsEnabled,
   onToggle,
+  onTimerElapsed,
   onOpenMedication,
   onOpenSettings,
   onBellClick
 }: TodayPageProps) {
   const medicationMap = new Map(medications.map((medication) => [medication.id, medication]));
   const taken = intakes.filter((intake) => intake.status === "taken").length;
+  const activeIntake = intakes.find((intake) => intake.status !== "missed" && intake.workflowStep !== "finish");
 
   return (
     <>
@@ -51,7 +54,9 @@ export default function TodayPage({
                 key={intake.id}
                 intake={intake}
                 medication={medicationMap.get(intake.medicationId)}
+                isActive={activeIntake?.id === intake.id}
                 onToggle={onToggle}
+                onTimerElapsed={onTimerElapsed}
                 onOpen={onOpenMedication}
               />
             ))}

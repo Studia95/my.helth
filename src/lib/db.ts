@@ -9,9 +9,11 @@ import type {
 } from "../types/medication";
 import {
   createMealTiming,
+  getInitialWorkflowStep,
   getMedicationEndDate,
   getMedicationStartDate,
   getMedicationTimes,
+  getMedicationWorkflow,
   legacyTimingToMealTiming
 } from "../types/medication";
 import { defaultSettings, type UserSettings } from "../types/settings";
@@ -134,6 +136,100 @@ export const updateDailyIntakeStatus = async (id: string, status: DailyIntakeSta
   return updated;
 };
 
+export type IntakeWorkflowAction = "primary";
+
+export const advanceDailyIntakeWorkflow = async (intakeId: string, medication: Medication) => {
+  const db = await dbPromise;
+  const intake = await db.get("dailyIntakes", intakeId);
+  if (!intake) return undefined;
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const workflow = getMedicationWorkflow(medication);
+  const currentStep = intake.workflowStep || getInitialWorkflowStep(medication);
+  let next: DailyIntake = {
+    ...intake,
+    workflowStartedAt: intake.workflowStartedAt || nowIso,
+    workflowStepStartedAt: nowIso
+  };
+
+  if (currentStep === "take" && workflow.beforeFoodTimer) {
+    next = {
+      ...next,
+      status: "taken",
+      takenAt: intake.takenAt || nowIso,
+      workflowStep: "wait_before_food",
+      workflowStepEndsAt: addMinutes(now, workflow.beforeFoodTimer).toISOString(),
+      timerNotifiedAt: undefined
+    };
+  } else if (currentStep === "wait_before_food") {
+    next = {
+      ...next,
+      workflowStep: "finish",
+      workflowStepEndsAt: undefined,
+      workflowFinishedAt: nowIso
+    };
+  } else if (currentStep === "eat") {
+    next = {
+      ...next,
+      status: "taken",
+      takenAt: intake.takenAt || nowIso,
+      workflowStep: "finish",
+      workflowStepEndsAt: undefined,
+      workflowFinishedAt: nowIso
+    };
+  } else if (currentStep === "wait_after_food") {
+    if (intake.workflowStepEndsAt) {
+      next = {
+        ...next,
+        status: "taken",
+        takenAt: intake.takenAt || nowIso,
+        workflowStep: "finish",
+        workflowStepEndsAt: undefined,
+        workflowFinishedAt: nowIso
+      };
+    } else {
+      const minutes = workflow.afterMealTimer || 0;
+      next = {
+        ...next,
+        workflowStep: minutes > 0 ? "wait_after_food" : "take_after_food",
+        workflowStepEndsAt: minutes > 0 ? addMinutes(now, minutes).toISOString() : undefined,
+        timerNotifiedAt: undefined
+      };
+    }
+  } else if (currentStep === "take_after_food") {
+    next = {
+      ...next,
+      status: "taken",
+      takenAt: intake.takenAt || nowIso,
+      workflowStep: "finish",
+      workflowStepEndsAt: undefined,
+      workflowFinishedAt: nowIso
+    };
+  } else {
+    next = {
+      ...next,
+      status: "taken",
+      takenAt: intake.takenAt || nowIso,
+      workflowStep: "finish",
+      workflowStepEndsAt: undefined,
+      workflowFinishedAt: nowIso
+    };
+  }
+
+  await db.put("dailyIntakes", next);
+  return next;
+};
+
+export const markDailyIntakeTimerNotified = async (intakeId: string) => {
+  const db = await dbPromise;
+  const intake = await db.get("dailyIntakes", intakeId);
+  if (!intake) return undefined;
+  const updated = { ...intake, timerNotifiedAt: new Date().toISOString() };
+  await db.put("dailyIntakes", updated);
+  return updated;
+};
+
 export const generateDailyIntakesForDate = async (date: string) => {
   const db = await dbPromise;
   const medications = (await db.getAll("medications")).filter(
@@ -153,7 +249,8 @@ export const generateDailyIntakesForDate = async (date: string) => {
           medicationId: medication.id,
           date,
           time,
-          status: hasTimePassedByHours(date, time, 2) ? "missed" : "pending"
+          status: hasTimePassedByHours(date, time, 2) ? "missed" : "pending",
+          workflowStep: getInitialWorkflowStep(medication)
         });
       }
     }
@@ -425,6 +522,8 @@ const courseEndFromDuration = (startDate: string, durationDays?: number | null) 
   if (!durationDays || durationDays < 1) return null;
   return toISODate(addDays(parseISODate(startDate), durationDays - 1));
 };
+
+const addMinutes = (date: Date, minutes: number) => new Date(date.getTime() + minutes * 60 * 1000);
 
 const isMedicationScheduledForDate = (medication: Medication, date: string) => {
   const startDate = getMedicationStartDate(medication);

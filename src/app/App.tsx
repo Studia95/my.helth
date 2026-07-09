@@ -13,6 +13,7 @@ import type { DailyIntake, Medication } from "../types/medication";
 import { defaultSettings, type UserSettings } from "../types/settings";
 import {
   addMedication,
+  advanceDailyIntakeWorkflow,
   clearAllData,
   deleteMedication,
   generateDailyIntakesForDate,
@@ -20,6 +21,7 @@ import {
   getMedications,
   getSettings,
   initDatabase,
+  markDailyIntakeTimerNotified,
   updateDailyIntakeStatus,
   updateMedication,
   updateSettings
@@ -117,9 +119,16 @@ export default function App() {
   };
 
   const handleToggleIntake = async (intake: DailyIntake) => {
-    await updateDailyIntakeStatus(intake.id, intake.status === "taken" ? "pending" : "taken");
+    const medication = medications.find((item) => item.id === intake.medicationId);
+    if (medication) await advanceDailyIntakeWorkflow(intake.id, medication);
+    else await updateDailyIntakeStatus(intake.id, intake.status === "taken" ? "pending" : "taken");
     setIntakes(await getDailyIntakesByDate(today));
     setRefreshKey((key) => key + 1);
+  };
+
+  const handleTimerElapsed = async (intake: DailyIntake) => {
+    await markDailyIntakeTimerNotified(intake.id);
+    setIntakes(await getDailyIntakesByDate(today));
   };
 
   const handleSaveMedication = async (medication: Medication | Omit<Medication, "id" | "createdAt" | "updatedAt">) => {
@@ -192,6 +201,7 @@ export default function App() {
             medications={medications}
             notificationsEnabled={settings.notificationsEnabled}
             onToggle={handleToggleIntake}
+            onTimerElapsed={handleTimerElapsed}
             onOpenMedication={openForm}
             onOpenSettings={() => navigate("settings")}
             onBellClick={enableNotifications}

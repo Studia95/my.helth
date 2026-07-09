@@ -29,6 +29,14 @@ export type IntakeTiming =
 
 export type DailyIntakeStatus = "pending" | "taken" | "missed";
 
+export type WorkflowStep =
+  | "take"
+  | "wait_before_food"
+  | "eat"
+  | "wait_after_food"
+  | "take_after_food"
+  | "finish";
+
 export interface MealTiming {
   code: MealTimingCode;
   label: string;
@@ -54,6 +62,13 @@ export interface MedicationReminderSettings {
   repeatIfNotTakenMinutes: number;
 }
 
+export interface MedicationWorkflow {
+  beforeFoodTimer?: number;
+  duringMeal?: boolean;
+  afterMealTimer?: number;
+  beforeSleep?: boolean;
+}
+
 export interface Medication {
   id: string;
   name: string;
@@ -68,6 +83,7 @@ export interface Medication {
   instructions: string[];
   reminders: MedicationReminderSettings;
   warnings: string[];
+  workflow?: MedicationWorkflow;
   needsDoctorClarification?: boolean;
   isActive: boolean;
   photo?: string;
@@ -104,6 +120,12 @@ export interface DailyIntake {
   time: string;
   status: DailyIntakeStatus;
   takenAt?: string;
+  workflowStep?: WorkflowStep;
+  workflowStartedAt?: string;
+  workflowStepStartedAt?: string;
+  workflowStepEndsAt?: string;
+  workflowFinishedAt?: string;
+  timerNotifiedAt?: string;
 }
 
 export const medicationFormLabels: Record<MedicationForm, string> = {
@@ -176,4 +198,25 @@ export const getMealTimingLabel = (medication: Medication) => {
   if (medication.mealTiming?.label) return medication.mealTiming.label;
   if (medication.timing) return mealTimingLabels[legacyTimingToMealTiming[medication.timing]];
   return mealTimingLabels.anytime;
+};
+
+export const getMedicationWorkflow = (medication: Medication): MedicationWorkflow => {
+  if (medication.workflow) return medication.workflow;
+  const code = medication.mealTiming?.code || (medication.timing ? legacyTimingToMealTiming[medication.timing] : "anytime");
+  if (code === "before_food_30_min") return { beforeFoodTimer: 30 };
+  if (code === "before_food_20_min") return { beforeFoodTimer: 20 };
+  if (code === "with_food") return { duringMeal: true };
+  if (code === "right_after_food") return { afterMealTimer: 0 };
+  if (code === "after_food_30_min") return { afterMealTimer: 30 };
+  if (code === "after_food_1_5_hour") return { afterMealTimer: 90 };
+  if (code === "before_sleep") return { beforeSleep: true };
+  return {};
+};
+
+export const getInitialWorkflowStep = (medication: Medication): WorkflowStep => {
+  const workflow = getMedicationWorkflow(medication);
+  if (workflow.beforeFoodTimer) return "take";
+  if (workflow.duringMeal) return "eat";
+  if (workflow.afterMealTimer !== undefined) return "wait_after_food";
+  return "take";
 };
