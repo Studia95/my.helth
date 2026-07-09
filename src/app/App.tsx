@@ -200,6 +200,7 @@ export default function App() {
             intakes={intakes}
             medications={medications}
             notificationsEnabled={settings.notificationsEnabled}
+            groupIntakesByDaySection={settings.groupIntakesByDaySection}
             onToggle={handleToggleIntake}
             onTimerElapsed={handleTimerElapsed}
             onOpenMedication={openForm}

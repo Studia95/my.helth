@@ -1,4 +1,4 @@
-import { Bell, Cloud, Info, Moon, UserRound } from "lucide-react";
+import { Bell, Cloud, Info, Layers3, Moon, UserRound } from "lucide-react";
 import type { ChangeEvent, ReactNode } from "react";
 import type { UserSettings } from "../types/settings";
 import { notificationWarning, requestNotificationPermission } from "../lib/notifications";
@@ -64,6 +64,13 @@ export default function SettingsPage({ settings, onChange, onExport, onImport, o
           <p className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800 dark:bg-amber-400/10 dark:text-amber-100">
             {notificationWarning}
           </p>
+        </Section>
+        <Section icon={<Layers3 size={21} />} title="Главный экран" subtitle="Отображение приёмов">
+          <Toggle
+            label="Группировать лекарства по времени суток"
+            checked={settings.groupIntakesByDaySection}
+            onChange={(value) => update({ groupIntakesByDaySection: value })}
+          />
         </Section>
         <Section icon={<Cloud size={21} />} title="Резервная копия / Импорт" subtitle="Экспорт данных и импорт назначений">
           <button onClick={onExport} className="settings-button">Экспортировать данные</button>

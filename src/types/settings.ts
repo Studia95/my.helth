@@ -7,6 +7,7 @@ export interface UserSettings {
   vibrationEnabled: boolean;
   soundEnabled: boolean;
   theme: "light" | "dark";
+  groupIntakesByDaySection: boolean;
 }
 
 export const defaultSettings: UserSettings = {
@@ -14,5 +15,6 @@ export const defaultSettings: UserSettings = {
   repeatReminderMinutes: 10,
   vibrationEnabled: true,
   soundEnabled: true,
-  theme: "light"
+  theme: "light",
+  groupIntakesByDaySection: true
 };

@@ -291,7 +291,7 @@ export const getSettings = async (): Promise<UserSettings> => {
     return defaultSettings;
   }
   const { id: _id, ...rest } = settings;
-  return rest;
+  return { ...defaultSettings, ...rest };
 };
 
 export const updateSettings = async (settings: UserSettings) => {

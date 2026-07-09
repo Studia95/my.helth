@@ -7,6 +7,7 @@ interface IntakeCardProps {
   intake: DailyIntake;
   medication?: Medication;
   isActive: boolean;
+  tone?: "plain" | "morning" | "day" | "evening";
   onToggle: (intake: DailyIntake) => void;
   onTimerElapsed: (intake: DailyIntake) => void;
   onOpen: (medicationId: string) => void;
@@ -21,6 +22,7 @@ function InteractiveIntakeCard({
   intake,
   medication,
   isActive,
+  tone = "plain",
   onToggle,
   onTimerElapsed,
   onOpen
@@ -49,6 +51,7 @@ function InteractiveIntakeCard({
   const totalMs = timerEndsAt && timerStartedAt ? Math.max(timerEndsAt - timerStartedAt, 1) : 1;
   const progress = timerEndsAt ? Math.min(100, Math.max(0, ((totalMs - Math.max(remainingMs || 0, 0)) / totalMs) * 100)) : 0;
   const ui = getWorkflowUi({ intake, medication, now, remainingMs, isActive });
+  const toneUi = getToneUi(tone);
 
   useEffect(() => {
     if (!isActive || !timerEndsAt || !isTimerExpired || intake.timerNotifiedAt) return;
@@ -59,7 +62,7 @@ function InteractiveIntakeCard({
 
   return (
     <article
-      className={`rounded-[20px] bg-white p-4 shadow-card transition-all dark:bg-white/8 ${
+      className={`rounded-[20px] p-4 shadow-card transition-all ${toneUi.card} ${
         isActive && !isFinished ? "scale-[1.01] ring-2 ring-app-green/20" : ""
       } ${isOverdue ? "bg-red-50 ring-2 ring-red-200 dark:bg-red-400/10 dark:ring-red-300/25" : ""} ${
         isAlmostDue ? "animate-pulse bg-emerald-50 dark:bg-emerald-400/10" : ""
@@ -67,19 +70,19 @@ function InteractiveIntakeCard({
     >
       <div className="grid grid-cols-[72px_1fr_44px] items-center gap-3">
         <button onClick={() => onOpen(medication.id)} className="text-left">
-          <div className="text-xl font-extrabold text-app-text dark:text-white">{intake.time}</div>
-          <div className={`mt-1 text-xs font-semibold ${isMissed ? "text-app-danger" : "text-app-muted dark:text-white/60"}`}>
+          <div className={`text-xl font-extrabold ${toneUi.text}`}>{intake.time}</div>
+          <div className={`mt-1 text-xs font-semibold ${isMissed ? "text-app-danger" : toneUi.muted}`}>
             {isMissed ? "пропущено" : getMealTimingLabel(medication)}
           </div>
         </button>
-        <button onClick={() => onOpen(medication.id)} className="min-w-0 border-l border-slate-100 pl-4 text-left dark:border-white/10">
+        <button onClick={() => onOpen(medication.id)} className={`min-w-0 border-l pl-4 text-left ${toneUi.divider}`}>
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-app-green dark:bg-white/10">
+            <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${toneUi.pill}`}>
               <PillIcon form={medication.form} />
             </div>
             <div className="min-w-0">
-              <h3 className="truncate text-base font-extrabold text-app-text dark:text-white">{medication.name}</h3>
-              <p className="truncate text-sm font-medium text-app-muted dark:text-white/60">{medication.dosage}</p>
+              <h3 className={`truncate text-base font-extrabold ${toneUi.text}`}>{medication.name}</h3>
+              <p className={`truncate text-sm font-medium ${toneUi.muted}`}>{medication.dosage}</p>
             </div>
           </div>
         </button>
@@ -121,13 +124,41 @@ function InteractiveIntakeCard({
       ) : null}
 
       {isFinished ? (
-        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-sm dark:border-white/10">
+        <div className={`mt-3 flex items-center justify-between border-t pt-3 text-sm ${toneUi.divider}`}>
           <span className="font-bold text-app-green">✓ Выполнено</span>
-          <span className="font-semibold text-app-muted dark:text-white/60">{intake.workflowFinishedAt ? formatClock(intake.workflowFinishedAt) : ""}</span>
+          <span className={`font-semibold ${toneUi.muted}`}>{intake.workflowFinishedAt ? formatClock(intake.workflowFinishedAt) : ""}</span>
         </div>
       ) : null}
     </article>
   );
+}
+
+function getToneUi(tone: NonNullable<IntakeCardProps["tone"]>) {
+  if (tone === "day") {
+    return {
+      card: "bg-[#FFF9E8]",
+      text: "text-app-text",
+      muted: "text-app-muted",
+      divider: "border-amber-200/70",
+      pill: "bg-amber-100 text-amber-600"
+    };
+  }
+  if (tone === "evening") {
+    return {
+      card: "bg-[#1C2745]",
+      text: "text-white",
+      muted: "text-white/68",
+      divider: "border-white/10",
+      pill: "bg-sky-300/15 text-sky-300"
+    };
+  }
+  return {
+    card: "bg-white dark:bg-white/8",
+    text: "text-app-text dark:text-white",
+    muted: "text-app-muted dark:text-white/60",
+    divider: "border-slate-100 dark:border-white/10",
+    pill: "bg-emerald-50 text-app-green dark:bg-white/10"
+  };
 }
 
 function PillIcon({ form }: { form: Medication["form"] }) {
