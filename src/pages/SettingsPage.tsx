@@ -65,7 +65,7 @@ export default function SettingsPage({ settings, onChange, onExport, onImport, o
             {notificationWarning}
           </p>
         </Section>
-        <Section icon={<Cloud size={21} />} title="Резервная копия" subtitle="Экспорт и импорт данных">
+        <Section icon={<Cloud size={21} />} title="Резервная копия / Импорт" subtitle="Экспорт данных и импорт назначений">
           <button onClick={onExport} className="settings-button">Экспортировать данные</button>
           <label className="settings-button block text-center">
             Импортировать данные

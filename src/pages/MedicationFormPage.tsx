@@ -1,8 +1,16 @@
 import { Camera, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import type { IntakeTiming, Medication, MedicationForm } from "../types/medication";
-import { intakeTimingLabels, medicationFormLabels } from "../types/medication";
+import type { MealTimingCode, Medication, MedicationForm } from "../types/medication";
+import {
+  createMealTiming,
+  getMedicationEndDate,
+  getMedicationStartDate,
+  getMedicationTimes,
+  legacyTimingToMealTiming,
+  mealTimingLabels,
+  medicationFormLabels
+} from "../types/medication";
 import { addDays, addMonths, toISODate } from "../lib/dates";
 
 interface MedicationFormPageProps {
@@ -12,14 +20,12 @@ interface MedicationFormPageProps {
   onDelete?: (id: string) => void;
 }
 
-const takeOptions = ["1 раз в день", "2 раза в день", "3 раза в день", "4 раза в день", "По необходимости", "Свой режим"];
-
 export default function MedicationFormPage({ medication, onSave, onCancel, onDelete }: MedicationFormPageProps) {
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
   const [form, setForm] = useState<MedicationForm>("tablet");
   const [instructions, setInstructions] = useState("1 раз в день");
-  const [timing, setTiming] = useState<IntakeTiming>("after_food");
+  const [timing, setTiming] = useState<MealTimingCode>("right_after_food");
   const [times, setTimes] = useState(["08:30"]);
   const [startDate, setStartDate] = useState(toISODate());
   const [endDate, setEndDate] = useState("");
@@ -30,11 +36,11 @@ export default function MedicationFormPage({ medication, onSave, onCancel, onDel
     setName(medication.name);
     setDosage(medication.dosage);
     setForm(medication.form);
-    setInstructions(medication.instructions || "1 раз в день");
-    setTiming(medication.timing);
-    setTimes(medication.times.length ? medication.times : ["08:30"]);
-    setStartDate(medication.startDate);
-    setEndDate(medication.endDate || "");
+    setInstructions(medication.instructions?.join("\n") || "1 раз в день");
+    setTiming(medication.mealTiming?.code || (medication.timing ? legacyTimingToMealTiming[medication.timing] : "right_after_food"));
+    setTimes(getMedicationTimes(medication).length ? getMedicationTimes(medication) : ["08:30"]);
+    setStartDate(getMedicationStartDate(medication) || toISODate());
+    setEndDate(getMedicationEndDate(medication) || "");
     setPhoto(medication.photo);
   }, [medication]);
 
@@ -52,11 +58,32 @@ export default function MedicationFormPage({ medication, onSave, onCancel, onDel
       name: name.trim(),
       dosage: dosage.trim(),
       form,
-      instructions,
-      timing,
-      times: times.filter(Boolean).sort(),
-      startDate,
-      endDate: endDate || undefined,
+      aliases: medication?.aliases || [],
+      quantityPerDose: medication?.quantityPerDose || 1,
+      unit: medication?.unit || defaultUnit(form),
+      schedule: {
+        type: medication?.schedule?.type || "daily",
+        times: times.filter(Boolean).sort(),
+        repeatEveryDays: medication?.schedule?.repeatEveryDays || 1
+      },
+      mealTiming: createMealTiming(timing),
+      course: {
+        startDate,
+        durationDays: medication?.course?.durationDays ?? null,
+        endDate: endDate || null,
+        label: endDate ? `${startDate} - ${endDate}` : "Без окончания"
+      },
+      instructions: instructions
+        .split("\n")
+        .map((item) => item.trim())
+        .filter(Boolean),
+      reminders: medication?.reminders || {
+        enabled: true,
+        notifyBeforeMinutes: 0,
+        repeatIfNotTakenMinutes: 15
+      },
+      warnings: medication?.warnings || [],
+      needsDoctorClarification: medication?.needsDoctorClarification,
       isActive: medication?.isActive ?? true,
       photo
     };
@@ -114,15 +141,16 @@ export default function MedicationFormPage({ medication, onSave, onCancel, onDel
         </section>
         <section className="space-y-4 rounded-[20px] bg-white p-4 shadow-card dark:bg-white/8">
           <Field label="Как принимать">
-            <select value={instructions} onChange={(event) => setInstructions(event.target.value)} className="input">
-              {takeOptions.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
+            <textarea
+              value={instructions}
+              onChange={(event) => setInstructions(event.target.value)}
+              placeholder="1 раз в день"
+              className="input min-h-20 resize-none"
+            />
           </Field>
           <Field label="Условие приёма">
-            <select value={timing} onChange={(event) => setTiming(event.target.value as IntakeTiming)} className="input">
-              {Object.entries(intakeTimingLabels).map(([value, label]) => (
+            <select value={timing} onChange={(event) => setTiming(event.target.value as MealTimingCode)} className="input">
+              {Object.entries(mealTimingLabels).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -195,4 +223,13 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {children}
     </label>
   );
+}
+
+function defaultUnit(form: MedicationForm) {
+  if (form === "capsule") return "капсула";
+  if (form === "stick") return "стик";
+  if (form === "drops") return "капли";
+  if (form === "syrup") return "мл";
+  if (form === "injection") return "инъекция";
+  return "таблетка";
 }

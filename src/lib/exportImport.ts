@@ -1,5 +1,5 @@
 import { backupDateStamp } from "./dates";
-import { exportAllData, importAllData } from "./db";
+import { exportAllData, importAllData, importMedicationFileData } from "./db";
 
 export const downloadBackup = async () => {
   const data = await exportAllData();
@@ -15,5 +15,10 @@ export const downloadBackup = async () => {
 export const importBackupFile = async (file: File) => {
   const text = await file.text();
   const data = JSON.parse(text);
+  if (data?.schema === "my.helth.import") {
+    const result = await importMedicationFileData(data);
+    return `Импорт завершён.\nДобавлено: ${result.added}\nОбновлено: ${result.updated}\nПропущено: ${result.skipped}`;
+  }
   await importAllData(data);
+  return "Данные импортированы";
 };

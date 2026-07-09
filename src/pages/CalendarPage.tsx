@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import type { DailyIntake, Medication } from "../types/medication";
+import { getMedicationEndDate, getMedicationStartDate } from "../types/medication";
 import { generateDailyIntakesForDate } from "../lib/db";
 import { getWeekDays, isDateInRange, toISODate } from "../lib/dates";
 
@@ -21,7 +22,7 @@ export default function CalendarPage({ medications, refreshKey }: CalendarPagePr
   }, [refreshKey, selectedDate]);
 
   const medicationRows = medications.filter((medication) =>
-    week.some((day) => medication.isActive && isDateInRange(day.iso, medication.startDate, medication.endDate))
+    week.some((day) => medication.isActive && isDateInRange(day.iso, getMedicationStartDate(medication), getMedicationEndDate(medication)))
   );
 
   return (
@@ -81,7 +82,7 @@ export default function CalendarPage({ medications, refreshKey }: CalendarPagePr
 }
 
 function DayMark({ medication, date, intakes }: { medication: Medication; date: string; intakes: DailyIntake[] }) {
-  if (!isDateInRange(date, medication.startDate, medication.endDate)) return <span className="text-app-muted">-</span>;
+  if (!isDateInRange(date, getMedicationStartDate(medication), getMedicationEndDate(medication))) return <span className="text-app-muted">-</span>;
   const own = intakes.filter((intake) => intake.medicationId === medication.id);
   if (own.length === 0) return <span className="text-app-muted">○</span>;
   if (own.some((intake) => intake.status === "missed")) return <span className="font-black text-app-warning">!</span>;

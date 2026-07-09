@@ -1,5 +1,6 @@
 import { ChevronRight, MoreVertical } from "lucide-react";
 import type { Medication } from "../types/medication";
+import { getMedicationEndDate, getMedicationStartDate, getMedicationTimes } from "../types/medication";
 import { formatShortDate } from "../lib/dates";
 
 interface MedicationCardProps {
@@ -9,6 +10,8 @@ interface MedicationCardProps {
 }
 
 export default function MedicationCard({ medication, onOpen, onMenu }: MedicationCardProps) {
+  const times = getMedicationTimes(medication);
+
   return (
     <article className="grid grid-cols-[58px_1fr_auto] items-center gap-3 rounded-[20px] bg-white p-4 shadow-card dark:bg-white/8">
       <button onClick={() => onOpen(medication.id)} className="grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-emerald-50 text-app-green dark:bg-white/10">
@@ -24,10 +27,10 @@ export default function MedicationCard({ medication, onOpen, onMenu }: Medicatio
           ) : null}
         </div>
         <p className="truncate text-sm font-semibold text-app-muted dark:text-white/60">
-          {medication.dosage} • {medication.times.length} {medication.times.length === 1 ? "раз" : "раза"} в день
+          {medication.dosage} • {times.length} {times.length === 1 ? "раз" : "раза"} в день
         </p>
         <p className="mt-1 text-sm text-app-muted dark:text-white/55">
-          {formatShortDate(medication.startDate)} — {formatShortDate(medication.endDate)}
+          {formatShortDate(getMedicationStartDate(medication))} — {formatShortDate(getMedicationEndDate(medication))}
         </p>
       </button>
       <div className="flex items-center gap-1">

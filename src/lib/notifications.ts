@@ -41,10 +41,11 @@ export const scheduleTodayNotifications = (
     .filter((intake) => intake.status === "pending")
     .forEach((intake) => {
       const medication = medicationMap.get(intake.medicationId);
-      if (!medication) return;
+      if (!medication || medication.reminders?.enabled === false) return;
       const when = parseISODate(intake.date);
       const [hour, minute] = intake.time.split(":").map(Number);
       when.setHours(hour, minute, 0, 0);
+      when.setMinutes(when.getMinutes() - (medication.reminders?.notifyBeforeMinutes || 0));
       const delay = when.getTime() - Date.now();
       if (delay < 0 || delay > 24 * 60 * 60 * 1000) return;
 
@@ -68,12 +69,12 @@ export const showIntakeNotification = async (
     icon: notificationIconUrl,
     data: {
       intakeId: intake.id,
-      repeatReminderMinutes: settings.repeatReminderMinutes
+      repeatReminderMinutes: medication.reminders?.repeatIfNotTakenMinutes || settings.repeatReminderMinutes
     },
     vibrate: settings.vibrationEnabled ? [120, 80, 120] : undefined,
     actions: [
       { action: "taken", title: "Принято" },
-      { action: "later", title: `Через ${settings.repeatReminderMinutes} минут` }
+      { action: "later", title: `Через ${medication.reminders?.repeatIfNotTakenMinutes || settings.repeatReminderMinutes} минут` }
     ]
   };
 

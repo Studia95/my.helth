@@ -149,10 +149,10 @@ export default function App() {
       flash("Данные очищены");
     }
     if (confirm.type === "import") {
-      await importBackupFile(confirm.file);
+      const message = await importBackupFile(confirm.file);
       await load();
       navigate("today");
-      flash("Данные импортированы");
+      flash(message);
     }
     setConfirm(null);
   };
@@ -245,7 +245,7 @@ export default function App() {
           </button>
         ) : null}
         {notice ? (
-          <div className="fixed left-1/2 top-4 z-50 w-[calc(100%-2.5rem)] max-w-[440px] -translate-x-1/2 rounded-[20px] bg-app-text px-4 py-3 text-center text-sm font-extrabold text-white shadow-soft dark:bg-white dark:text-app-text">
+          <div className="fixed left-1/2 top-4 z-50 w-[calc(100%-2.5rem)] max-w-[440px] -translate-x-1/2 whitespace-pre-line rounded-[20px] bg-app-text px-4 py-3 text-center text-sm font-extrabold text-white shadow-soft dark:bg-white dark:text-app-text">
             {notice}
           </div>
         ) : null}
@@ -255,7 +255,7 @@ export default function App() {
           title={confirm?.type === "import" ? "Импорт данных" : confirm?.type === "clear" ? "Очистить данные" : "Удалить лекарство"}
           text={
             confirm?.type === "import"
-              ? "Импорт заменит текущие данные. Продолжить?"
+              ? "Файл резервной копии заменит текущие данные. Файл назначения my.helth.import добавит или обновит лекарства по настройкам JSON."
               : confirm?.type === "clear"
                 ? "Все локальные данные будут удалены и начальная схема будет создана заново."
                 : "Лекарство и связанные отметки будут удалены."

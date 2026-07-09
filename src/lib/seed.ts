@@ -1,4 +1,5 @@
-import type { IntakeTiming, Medication, MedicationForm } from "../types/medication";
+import type { MealTimingCode, Medication, MedicationForm } from "../types/medication";
+import { createMealTiming } from "../types/medication";
 import { addDays, addMonths, toISODate } from "./dates";
 
 interface SeedItem {
@@ -6,8 +7,11 @@ interface SeedItem {
   dosage: string;
   form: MedicationForm;
   times: string[];
-  timing: IntakeTiming;
+  mealTiming: MealTimingCode;
   instructions?: string;
+  quantityPerDose?: number;
+  unit?: string;
+  needsDoctorClarification?: boolean;
   days?: number;
   months?: number;
 }
@@ -18,7 +22,7 @@ const seedItems: SeedItem[] = [
     dosage: "20 мг, 1 таблетка",
     form: "tablet",
     times: ["07:30", "19:00"],
-    timing: "before_food",
+    mealTiming: "before_food_30_min",
     instructions: "За 30 минут до еды",
     days: 21
   },
@@ -27,7 +31,7 @@ const seedItems: SeedItem[] = [
     dosage: "50 мг, 1 таблетка",
     form: "tablet",
     times: ["07:40", "12:40", "19:10"],
-    timing: "before_food",
+    mealTiming: "before_food_20_min",
     instructions: "За 20 минут до еды",
     days: 21
   },
@@ -36,22 +40,24 @@ const seedItems: SeedItem[] = [
     dosage: "4000 МЕ, 1 капсула",
     form: "capsule",
     times: ["08:00"],
-    timing: "with_food",
+    mealTiming: "with_food",
     months: 3
   },
   {
     name: "Бестфертил",
     dosage: "2 капсулы",
     form: "capsule",
-    times: ["08:00", "22:00"],
-    timing: "after_food"
+    times: ["08:00", "20:00"],
+    mealTiming: "with_food",
+    quantityPerDose: 2,
+    unit: "капсулы"
   },
   {
     name: "Ребамипид",
     dosage: "100 мг, 1 таблетка",
     form: "tablet",
     times: ["08:30", "13:30", "20:30"],
-    timing: "after_30_min",
+    mealTiming: "after_food_30_min",
     instructions: "Ребагит",
     days: 56
   },
@@ -60,7 +66,7 @@ const seedItems: SeedItem[] = [
     dosage: "1 стик",
     form: "stick",
     times: ["09:30", "14:30", "21:30"],
-    timing: "after_1_5_hour",
+    mealTiming: "after_food_1_5_hour",
     days: 7
   },
   {
@@ -68,7 +74,7 @@ const seedItems: SeedItem[] = [
     dosage: "1 таблетка",
     form: "tablet",
     times: ["08:30"],
-    timing: "after_food",
+    mealTiming: "right_after_food",
     instructions: "По назначению врача"
   },
   {
@@ -76,8 +82,9 @@ const seedItems: SeedItem[] = [
     dosage: "1 таблетка",
     form: "tablet",
     times: ["08:30"],
-    timing: "after_food",
-    instructions: "По назначению врача"
+    mealTiming: "ask_doctor",
+    instructions: "По назначению врача",
+    needsDoctorClarification: true
   }
 ];
 
@@ -96,13 +103,31 @@ export const createSeedMedications = (): Medication[] => {
     return {
       id,
       name: item.name,
+      aliases: [],
       dosage: item.dosage,
       form: item.form,
-      timing: item.timing,
-      times: item.times,
-      instructions: item.instructions,
-      startDate: toISODate(start),
-      endDate,
+      quantityPerDose: item.quantityPerDose || 1,
+      unit: item.unit || (item.form === "stick" ? "стик" : item.form === "capsule" ? "капсула" : "таблетка"),
+      schedule: {
+        type: "daily",
+        times: item.times,
+        repeatEveryDays: 1
+      },
+      mealTiming: createMealTiming(item.mealTiming),
+      course: {
+        startDate: toISODate(start),
+        durationDays: item.days || null,
+        endDate: endDate || null,
+        label: item.days ? `${item.days} дней` : item.months ? `${item.months} мес.` : "Без окончания"
+      },
+      instructions: item.instructions ? [item.instructions] : [],
+      reminders: {
+        enabled: true,
+        notifyBeforeMinutes: 0,
+        repeatIfNotTakenMinutes: 15
+      },
+      warnings: [],
+      needsDoctorClarification: item.needsDoctorClarification,
       isActive: true,
       createdAt: now,
       updatedAt: now

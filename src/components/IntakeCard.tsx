@@ -1,6 +1,6 @@
 import { Check, Clock3, RotateCcw } from "lucide-react";
 import type { DailyIntake, Medication } from "../types/medication";
-import { intakeTimingLabels } from "../types/medication";
+import { getMealTimingLabel } from "../types/medication";
 
 interface IntakeCardProps {
   intake: DailyIntake;
@@ -20,7 +20,7 @@ export default function IntakeCard({ intake, medication, onToggle, onOpen }: Int
       <button onClick={() => onOpen(medication.id)} className="text-left">
         <div className="text-xl font-extrabold text-app-text dark:text-white">{intake.time}</div>
         <div className={`mt-1 text-xs font-semibold ${isMissed ? "text-app-danger" : "text-app-muted dark:text-white/60"}`}>
-          {isMissed ? "пропущено" : intakeTimingLabels[medication.timing].toLowerCase()}
+          {isMissed ? "пропущено" : getMealTimingLabel(medication)}
         </div>
       </button>
       <button onClick={() => onOpen(medication.id)} className="min-w-0 border-l border-slate-100 pl-4 text-left dark:border-white/10">
